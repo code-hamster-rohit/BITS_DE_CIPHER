@@ -3,7 +3,7 @@ from config.connection import client
 
 router = APIRouter()
 
-@router.get('/leaderboard')
+@router.post('/leaderboard')
 async def leaderboard():
     with client.start_session() as session:
         try:

@@ -75,11 +75,16 @@ async def login(creds: Login):
             otp = client['2025']['OTP'].find_one({'email': creds.email}, session=session)
             if otp['otp'] == creds.otp:
                 token = tokenize(creds.email + creds.email[::-1])
-                client['2025']['USER_INFO'].insert_one({'_id': ObjectId(), 'email': creds.email, 'password': token}, session=session)
-                client['2025']['USER_QUESTION_NUMBER'].insert_one({'_id': ObjectId(), 'email': creds.email, 'latest_question_number': 1}, session=session)
-                client['2025'].create_collection(creds.email, session=session)
-                session.commit_transaction()
-                return {'message': 'Login successful', 'token': token}
+                if not client['2025']['USER_INFO'].find_one({'email': creds.email}, session=session):
+                    client['2025']['USER_INFO'].insert_one({'_id': ObjectId(), 'email': creds.email, 'password': token}, session=session)
+                    client['2025']['USER_QUESTION_NUMBER'].insert_one({'_id': ObjectId(), 'email': creds.email, 'latest_question_number': 1}, session=session)
+                    client['2025'].create_collection(creds.email, session=session)
+                    session.commit_transaction()
+                    return {'message': 'Login successful', 'token': token}
+                else:
+                    client['2025']['USER_INFO'].update_one({'email': creds.email}, {'$set': {'password': token}}, session=session)
+                    session.commit_transaction()
+                    return {'message': 'Login successful', 'token': token}
             else:
                 session.commit_transaction()
                 return {'message': 'Invalid OTP', 'token': ''}
